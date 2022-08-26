@@ -16,7 +16,13 @@ async function kMedias(){
     }
     
     //leitura dos objetos de entrada (dataset)
-    const objetos = await globals.readDataset(ARQUIVO_DATASET);
+    let objetos;
+    try{
+        objetos = await globals.readDataset(ARQUIVO_DATASET);
+    } catch(err){
+        console.log('Erro ao ler arquivo: ' + ARQUIVO_DATASET);
+        return;
+    }
 
 
     //selecionando centroides iniciais
@@ -40,10 +46,9 @@ async function kMedias(){
             categorizaObjetos(objetos[i], clusters);
         }
 
-
     }
 
-    globals.writeDataset(objetos);
+    globals.writeDataset(objetos, ARQUIVO_DATASET.slice(0, -4));
 }
 
 

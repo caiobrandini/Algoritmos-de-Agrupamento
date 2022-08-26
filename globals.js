@@ -3,7 +3,9 @@
 const fs = require('fs');
 
 /* função de escrever os dados da saída */
-function writeDataset( objetos ){
+function writeDataset( objetos, nomeArquivo ){
+
+    const dir = './results';
 
     objetos.sort(function(a,b) {
         if (a.cluster > b.cluster) {
@@ -22,7 +24,12 @@ function writeDataset( objetos ){
         string += objetos[i].label + ' ' + objetos[i].cluster + '\n';
     }
 
-    fs.writeFile('./datasets/resultado.clu', string, (err) => {
+    //cria diretorio se ele nao existe
+    if (!fs.existsSync(dir))
+        fs.mkdirSync(dir);
+ 
+
+    fs.writeFile('./results/'+ nomeArquivo +'.clu', string, (err) => {
         if (err) {
           console.error(err);
         }
@@ -42,8 +49,13 @@ function getRandomIntInclusive(min, max) {
 async function readDataset( datasetName ){
 
     let dataSet = [];
+    let data;
 
-    let data = fs.readFileSync('./datasets/'+ datasetName, 'utf8');
+    try{
+        data = fs.readFileSync('./datasets/'+ datasetName, 'utf8');
+    } catch(err){
+        throw err;
+    }
 
     dataSet = dataFormat(data);
     return dataSet;
@@ -100,4 +112,4 @@ function distEuclidiana(x1, y1, x2, y2){
 
 }
 
-module.exports = {writeDataset, getRandomIntInclusive, getRandomIntInclusive, readDataset, distEuclidiana};
+module.exports = {writeDataset, getRandomIntInclusive, readDataset, distEuclidiana};

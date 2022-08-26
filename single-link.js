@@ -13,15 +13,67 @@ async function singleLink(){
     }
     
     //leitura dos objetos de entrada (dataset)
-    const objetos = await globals.readDataset(ARQUIVO_DATASET);
+    let objetos;
+    try{
+        objetos = await globals.readDataset(ARQUIVO_DATASET);
+    } catch(err){
+        console.log('Erro ao ler arquivo: ' + ARQUIVO_DATASET);
+        return;
+    }
 
+    //calculo das distancias euclidianas entre todas as combinacoes
     const m = distanciasIniciais(objetos);
-    //agruparObjetos(m);
 
-    console.log( agruparObjetos(m) );
+    //criacao das particoes
+    const particao = agruparObjetos(m, objetos.length);
 
-    //console.log(m);
+    const pFormatada = formatarParticao(particao, objetos);
 
+    globals.writeDataset(pFormatada, ARQUIVO_DATASET.slice(0, -4));
+
+}
+
+function formatarParticao( p, objetos ){
+
+    let newP = [];
+    let nClusters = p.length;
+
+    for(let i = 0; i < objetos.length; i++){
+
+        const label = objetos[i].label;
+
+        for(let j=0; j<p.length; j++){
+
+            //objeto encontrado em algum cluster formado
+            if(p[j][label]){
+                
+                const o = {
+                    label: label,
+                    cluster: j
+                }
+
+                newP.push(o);
+                break;
+            }
+
+            //objeto nao encontrado nos clusters formados
+            if(j == p.length - 1){
+
+                const o = {
+                    label: label,
+                    cluster: nClusters
+                }
+
+                newP.push(o);
+
+                nClusters++;
+            }
+
+        }
+
+    }
+
+    return newP;
 }
 
 /* Retorna um objeto contendo a distancia entre cada uma das possiveis duplas de objetos */
@@ -65,9 +117,13 @@ function ordenarDistancias( m ){
     
 }
 
-function agruparObjetos( distancias ){
+//retorna um objeto com os clusters formados
+//objetos que ficarem fora dos clusters formados devem ser consideirados em clusters sozinhos
+function agruparObjetos( distancias, nObjetos ){
     
-    console.log("Iniciando o agrupamento dos objetos");
+    console.log("Iniciando o agrupamento dos objetos...");
+
+    let nClusters = nObjetos;
 
     let objetosAgrupados = [];
 
@@ -82,6 +138,8 @@ function agruparObjetos( distancias ){
         const label1 = menorDistancia['label1'];
         const label2 = menorDistancia['label2'];
 
+        if(nClusters == K)
+            break;
 
         //verificando a qual cluster os objetos de menor distancia pertencem
         for(let j=0; j < objetosAgrupados.length; j++) {
@@ -106,16 +164,20 @@ function agruparObjetos( distancias ){
             novoCluster[label1] = true;
             novoCluster[label2] = true;
             objetosAgrupados.push(novoCluster);
+
+            nClusters--;
         }
 
         // Caso 2: o primeiro objeto ja esta agrupado - Juntar o segundo no primeiro
         else if (clusterA !== null && clusterB === null) {
             clusterA[label2] = true;
+            nClusters--;
         }
 
         // Caso 3: o segundo objeto ja esta agrupado - Juntar o primeiro no segundo
         else if (clusterA === null && clusterB !== null) {
             clusterB[label1] = true;
+            nClusters--;
         }
 
         // Caso 4: os dois estão agrupados separados - Adicionar em um e tira do outro*
@@ -131,7 +193,7 @@ function agruparObjetos( distancias ){
             objetosAgrupados.splice(idx2, 1);
 
             objetosAgrupados.push(clusterNovo)
-            
+            nClusters--;
         }
 
         // Caso 5: os dois estão agrupados juntos
