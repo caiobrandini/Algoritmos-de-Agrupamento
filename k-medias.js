@@ -1,8 +1,9 @@
 const globals = require('./globals');
 
 const ARQUIVO_DATASET = process.argv[2];
-const NUMERO_ITERACOES = process.argv[3] || 100;
-const NUMERO_CLUSTERS = process.argv[4] || 2;
+const NUMERO_CLUSTERS = process.argv[3] || 2;
+const NUMERO_ITERACOES = process.argv[4] || 100;
+
 
 
 kMedias();
@@ -48,7 +49,7 @@ async function kMedias(){
 
     }
 
-    globals.writeDataset(objetos, ARQUIVO_DATASET.slice(0, -4));
+    globals.writeDataset(objetos, ARQUIVO_DATASET.slice(0, -4), 'k-medias');
 }
 
 

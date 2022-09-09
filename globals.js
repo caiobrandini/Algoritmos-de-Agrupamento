@@ -3,9 +3,9 @@
 const fs = require('fs');
 
 /* função de escrever os dados da saída */
-function writeDataset( objetos, nomeArquivo ){
+function writeDataset( objetos, nomeArquivo, dirname ){
 
-    const dir = './results';
+    const dir = './' + dirname;
 
     objetos.sort(function(a,b) {
         if (a.cluster > b.cluster) {
@@ -29,7 +29,7 @@ function writeDataset( objetos, nomeArquivo ){
         fs.mkdirSync(dir);
  
 
-    fs.writeFile('./results/'+ nomeArquivo +'.clu', string, (err) => {
+    fs.writeFile('./' + dirname + '/' + nomeArquivo +'.clu', string, (err) => {
         if (err) {
           console.error(err);
         }

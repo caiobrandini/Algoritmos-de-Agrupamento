@@ -4,9 +4,9 @@ const ARQUIVO_DATASET = process.argv[2];
 const Kmin = process.argv[3] || 2;
 const Kmax = process.argv[4] || 15;
 
-singleLink();
+completelink();
 
-async function singleLink(){
+async function completelink(){
     
     if(!ARQUIVO_DATASET){
         console.log('Forneça o nome e extensão do arquivo de entrada');
@@ -114,6 +114,29 @@ function ordenarDistancias( m ){
     
 }
 
+function podeAdicionarAoCluster (cluster, label) {
+
+    let contador = 0
+
+    objetosDoCluster = Object.keys(cluster)
+
+    for(let i=0; i < objetosDoCluster.length ; i++) {
+        objAtual = cluster[objetosDoCluster[i]];
+        if (objAtual[label]) {
+            contador++;
+        }
+    }
+
+    // O objeto adicionado já seria adicionado por todos outros membros
+    // do cluster, portanto adicionamos ele ao cluster
+    if (contador >= objetosDoCluster.length-1) {
+        return true
+    }
+
+    return false
+
+}
+
 //retorna um objeto com os clusters formados
 //objetos que ficarem fora dos clusters formados devem ser consideirados em clusters sozinhos
 function agruparObjetos( distancias, nObjetos, objetos ){
@@ -139,8 +162,8 @@ function agruparObjetos( distancias, nObjetos, objetos ){
 
         if(nClusters <= Kmax && nClusters >= Kmin && ultimaAlter != nClusters) {
             const pFormatada = formatarParticao(objetosAgrupados, objetos);
-
-            globals.writeDataset(pFormatada, ARQUIVO_DATASET.slice(0, -4) + 'k' + nClusters, 'single-link');
+            
+            globals.writeDataset(pFormatada, ARQUIVO_DATASET.slice(0, -4) + 'k' + nClusters, 'complete-link');
 
             ultimaAlter = nClusters;
         }
@@ -171,8 +194,8 @@ function agruparObjetos( distancias, nObjetos, objetos ){
             let novoCluster = {};
             //console.log('juntando %s e %s', label1, label2)
             
-            novoCluster[label1] = true;
-            novoCluster[label2] = true;
+            novoCluster[label1] = [];
+            novoCluster[label2] = [];
             objetosAgrupados.push(novoCluster);
 
             nClusters--;
@@ -180,17 +203,25 @@ function agruparObjetos( distancias, nObjetos, objetos ){
 
         // Caso 2: o primeiro objeto ja esta agrupado - Juntar o segundo no primeiro
         else if (clusterA !== null && clusterB === null) {
-            
             //console.log('juntando %s e %s', label1, label2)
-            clusterA[label2] = true;
-            nClusters--;
+            if (podeAdicionarAoCluster(clusterA, label2)) {
+                clusterA[label2] = [];
+                nClusters--;
+            } else {
+                clusterA[label1][label2] = true
+            }
         }
 
         // Caso 3: o segundo objeto ja esta agrupado - Juntar o primeiro no segundo
         else if (clusterA === null && clusterB !== null) {
             //console.log('juntando %s e %s', label1, label2)
-            clusterB[label1] = true;
-            nClusters--;
+            if (podeAdicionarAoCluster(clusterB, label1)) {
+                clusterB[label1] = [];
+                nClusters--;
+            } else {
+                clusterB[label2][label1] = true
+            }
+            
         }
 
         // Caso 4: os dois estão agrupados separados - Adicionar em um e tira do outro*
@@ -198,17 +229,23 @@ function agruparObjetos( distancias, nObjetos, objetos ){
             
             //console.log('juntando %s e %s', label1, label2)
 
-            let clusterNovo = {...clusterA, ...clusterB}
+            if (podeAdicionarAoCluster(clusterA, label2) && podeAdicionarAoCluster(clusterB, label1)) {
+                let clusterNovo = {...clusterA, ...clusterB}
 
-            //removendo segundo cluster
-            const idx = objetosAgrupados.indexOf(clusterB);
-            objetosAgrupados.splice(idx, 1);
+                const idx = objetosAgrupados.indexOf(clusterB);
+                objetosAgrupados.splice(idx, 1);
 
-            const idx2 = objetosAgrupados.indexOf(clusterA);
-            objetosAgrupados.splice(idx2, 1);
+                const idx2 = objetosAgrupados.indexOf(clusterA);
+                objetosAgrupados.splice(idx2, 1);
 
-            objetosAgrupados.push(clusterNovo)
-            nClusters--;
+                objetosAgrupados.push(clusterNovo)
+                nClusters--;
+            } else {
+                clusterA[label1][label2] = true
+                clusterB[label2][label1] = true
+            }
+
+            
         }
 
         // Caso 5: os dois estão agrupados juntos
